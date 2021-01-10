@@ -33,7 +33,7 @@ def RDF(r, theta=0.0, psi=0.0):
         at value 'phi'.
 
     """
-    if (3*(np.cos(theta))**2 - 1)/psi < 0:
+    if ((3*(np.cos(theta))**2 - 1)/psi).any() < 0:
         print("Error in RDF, log got negative argument")
     f = 2*np.log(r) - r/3 + np.log((3*(np.cos(theta))**2 - 1)/psi)
     return f
@@ -59,7 +59,7 @@ def RDF2(r, theta=0.0, psi=0.0):
         at value 'phi'.
 
     """
-    if (1 - 3*np.cos(theta)**2)/psi < 0:
+    if ((1 - 3*np.cos(theta)**2)/psi < 0).any():
         print("Error in RDF2, log got negative argument")
     ## Note difference in argument of 2nd log compared to RDF ##
     f = 2*np.log(r) - r/3 + np.log((1 - 3*(np.cos(theta))**2)/psi)
@@ -100,19 +100,18 @@ t_2 = np.hstack((t_2[::-1], t_2))
 
 ## Meat of the program: populates the arrays 'r' of the radial values of the wavefunction contours.
 r_1 = np.zeros_like(t_1)
-for i in range(t_1.size//2):
-#    print(t_1[i])
-    r_1[i] = opt.fsolve(partial(RDF, theta=t_1[i], psi=contour) , x0=7, 
-                      fprime=partial(deriv, theta=t_1[i]))
-    r_1[-i-1] = opt.fsolve(partial(RDF, theta=t_1[i], psi=contour) , x0=0.1, 
-                      fprime=partial(deriv, theta=t_1[i]))
+l_1 = t_1.size//2
+r_1[:l_1] = opt.newton(partial(RDF, theta=t_1[:l_1], psi=contour) , x0=7*np.ones(l_1), 
+                      fprime=partial(deriv, theta=t_1[:l_1]))
+r_1[l_1:] = opt.newton(partial(RDF, theta=t_1[l_1:], psi=contour) , x0=0.1*np.ones(l_1), 
+                      fprime=partial(deriv, theta=t_1[l_1:]))
+
 r_2 = np.zeros_like(t_2)
-for i in range(t_2.size//2):
-#    print(t_2[i])
-    r_2[i] = opt.fsolve(partial(RDF2, theta=t_2[i], psi=contour) , x0=0.1, 
-                      fprime=partial(deriv, theta=t_2[i]))
-    r_2[-i-1] = opt.fsolve(partial(RDF2, theta=t_2[i], psi=contour) , x0=7, 
-                      fprime=partial(deriv, theta=t_2[i]))
+l_2 = t_2.size//2
+r_2[l_2:] = opt.newton(partial(RDF2, theta=t_2[l_2:], psi=contour), x0=7*np.ones(l_2), 
+                          fprime=partial(deriv, theta=t_2[l_2:]))
+r_2[:l_2] = opt.newton(partial(RDF2, theta=t_2[:l_2], psi=contour), x0=0.1*np.ones(l_2), 
+                          fprime=partial(deriv, theta=t_2[:l_2]))
 
 ## Matplotlib stuff ##
 fig = plt.figure()
